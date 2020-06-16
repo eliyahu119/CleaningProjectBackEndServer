@@ -8,7 +8,7 @@ import (
 )
 
 var C chan string
-var lock sync.Mutex
+var Lock sync.Mutex
 
 const (
 	ERR = "something got wrong!"
@@ -21,8 +21,6 @@ func init() {
 
 //StartLock is a sync function for checking if lock exist (shouldnt be on a goroutine)
 func StartLock(url string) {
-	lock.Lock()
-	defer lock.Unlock()
 	isSafe := false
 	go func() {
 		go func() {
