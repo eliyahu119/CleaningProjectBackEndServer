@@ -15,6 +15,10 @@ import (
 	"webServerForWebProject/soldierFileJson"
 )
 
+const (
+	cleaningProjectProgramLoc = "\\build\\dist"
+)
+
 //hendle the general pages the client request like css and js file.
 func hendleGeneral(w http.ResponseWriter, path string /* contentType string */) {
 	f, err := ioutil.ReadFile(path)
@@ -57,6 +61,10 @@ func hendler(w http.ResponseWriter, r *http.Request) {
 func hendlePostRequest(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	log.Println()
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
 	jsonFile, err := soldierFileJson.CreateTheJSON(r.Form)
 	if err != nil {
 		log.Println(err)
@@ -69,7 +77,7 @@ func hendlePostRequest(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "write valid pogram")
 		return
 	}
-	err = ioutil.WriteFile("./build/soldier_file.json", file, 0644)
+	err = ioutil.WriteFile("."+cleaningProjectProgramLoc+"\\soldier_file.json", file, 0644)
 	if err != nil {
 		log.Println(err)
 		fmt.Fprint(w, "write valid pogram")
@@ -81,29 +89,28 @@ func hendlePostRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprint(w, "The excel is ready!")
-
+	excelFolder := dir + cleaningProjectProgramLoc + "\\excelFolder"
+	cmd := exec.Command("explorer", excelFolder)
+	cmd.Dir = excelFolder
+	err = cmd.Run()
 }
 
 func startThePogram() string {
+	lock.Lock.Lock()
+	defer lock.Lock.Unlock()
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
-	lock.StartLock(dir + "\\dist\\.LOCK")
-	cmd := exec.Command(dir + "\\dist\\CleaningProject.exe")
-	cmd.Dir = dir + "\\dist"
+	lock.StartLock(dir + cleaningProjectProgramLoc + "\\.LOCK")
+	cmd := exec.Command(dir + cleaningProjectProgramLoc + "\\CleaningProject.exe")
+	cmd.Dir = dir + cleaningProjectProgramLoc
 	err = cmd.Start()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	state := <-lock.C
 	return state
-}
-
-// httpserver start the http server
-func httpserver() {
-	http.HandleFunc("/", hendler)
-	http.ListenAndServe("127.0.0.1:8080", nil)
 }
 
 //open the browser with the current url
@@ -127,5 +134,6 @@ func openbrowser(url string) {
 //StartLocalServer start the local server of the pogram.
 func StartLocalServer() {
 	openbrowser("http://localhost:8080/")
-	httpserver()
+	http.HandleFunc("/", hendler)
+	http.ListenAndServe("127.0.0.1:8080", nil)
 }
